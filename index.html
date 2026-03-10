@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛡️ Quiz CiberDefensores - Privacidad y Ciberseguridad</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --card: #111827;
+    --card-hover: #1a2332;
+    --accent: #00e5ff;
+    --accent-glow: rgba(0,229,255,0.15);
+    --correct: #00e676;
+    --correct-bg: rgba(0,230,118,0.12);
+    --wrong: #ff5252;
+    --wrong-bg: rgba(255,82,82,0.12);
+    --text: #e8eaf6;
+    --text-dim: #78849e;
+    --border: #1e293b;
+    --option-bg: #161d2e;
+    --option-hover: #1c2740;
+    --progress-track: #1e293b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(100,50,255,0.03) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+
+  .header .shield {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 20px rgba(0,229,255,0.3));
+  }
+
+  .header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), #7c4dff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* PROGRESS */
+  .progress-section {
+    margin-bottom: 28px;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .progress-info .current {
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--progress-track);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #7c4dff);
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.4s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  .question-text {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 28px;
+    color: #fff;
+  }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--option-bg);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .option:hover:not(.disabled) {
+    background: var(--option-hover);
+    border-color: rgba(0,229,255,0.2);
+  }
+
+  .option.disabled { cursor: default; }
+
+  .option .letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    transition: all 0.2s ease;
+  }
+
+  .option .option-text {
+    font-size: 15px;
+    line-height: 1.5;
+    padding-top: 4px;
+    color: var(--text);
+  }
+
+  /* SELECTED STATES */
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .option.selected .letter {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .option.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+
+  .option.correct .letter {
+    background: var(--correct);
+    color: var(--bg);
+  }
+
+  .option.correct .letter::after { content: '✓'; }
+
+  .option.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+
+  .option.wrong .letter {
+    background: var(--wrong);
+    color: #fff;
+  }
+
+  .option.wrong .letter::after { content: '✗'; }
+
+  .option.correct .letter span,
+  .option.wrong .letter span { display: none; }
+
+  .option.dimmed {
+    opacity: 0.4;
+  }
+
+  /* FEEDBACK */
+  .feedback {
+    margin-top: 20px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: fadeUp 0.3s ease-out;
+  }
+
+  .feedback.correct-fb {
+    background: var(--correct-bg);
+    border: 1px solid rgba(0,230,118,0.2);
+    color: var(--correct);
+  }
+
+  .feedback.wrong-fb {
+    background: var(--wrong-bg);
+    border: 1px solid rgba(255,82,82,0.2);
+    color: #ff8a80;
+  }
+
+  .feedback strong { font-weight: 700; }
+
+  /* NEXT BUTTON */
+  .next-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bg);
+    background: linear-gradient(135deg, var(--accent), #7c4dff);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+  }
+
+  .next-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,255,0.25);
+  }
+
+  /* RESULTS */
+  .results-card {
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px 32px;
+    animation: fadeUp 0.5s ease-out;
+  }
+
+  .results-card .trophy { font-size: 72px; margin-bottom: 20px; display: block; }
+
+  .results-card h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+
+  .results-card .score-display {
+    font-size: 56px;
+    font-weight: 800;
+    margin: 20px 0;
+    background: linear-gradient(135deg, var(--accent), #7c4dff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .results-card .score-label {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .results-card .message {
+    font-size: 16px;
+    color: var(--text);
+    margin: 24px 0;
+    line-height: 1.6;
+  }
+
+  .results-bar {
+    width: 100%;
+    height: 10px;
+    background: var(--progress-track);
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+
+  .results-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .retry-btn {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 14px 40px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    background: transparent;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .retry-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .student-name-section {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .student-name-section label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .student-name-section input {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    padding: 12px 18px;
+    width: 100%;
+    max-width: 360px;
+    background: var(--option-bg);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .student-name-section input:focus {
+    border-color: var(--accent);
+  }
+
+  .start-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 16px 48px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bg);
+    background: linear-gradient(135deg, var(--accent), #7c4dff);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .start-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,255,0.25); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    .container { padding: 16px 12px 40px; }
+    .question-card { padding: 24px 18px; }
+    .header h1 { font-size: 22px; }
+    .question-text { font-size: 17px; }
+    .results-card .score-display { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- INTRO SCREEN -->
+  <div id="intro">
+    <div class="header">
+      <span class="shield">🛡️</span>
+      <h1>Quiz CiberDefensores</h1>
+      <p>Privacidad, Identidad Digital y Reputación Online<br>15 preguntas · ¿Cuánto sabes sobre ciberseguridad?</p>
+    </div>
+    <div class="student-name-section">
+      <label for="studentName">Escribe tu nombre para empezar</label>
+      <input type="text" id="studentName" placeholder="Tu nombre y apellidos" autocomplete="off">
+      <br>
+      <button class="start-btn" onclick="startQuiz()">Empezar el Quiz</button>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz" class="hidden">
+    <div class="progress-section">
+      <div class="progress-info">
+        <span class="current" id="progressText">1 / 15</span>
+        <span id="scoreText">Aciertos: 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="question-number" id="qNumber">PREGUNTA 1</div>
+      <div class="question-text" id="qText"></div>
+      <div class="options" id="optionsContainer"></div>
+      <div class="feedback hidden" id="feedback"></div>
+      <button class="next-btn hidden" id="nextBtn" onclick="nextQuestion()">Siguiente pregunta →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results" class="hidden">
+    <div class="results-card">
+      <span class="trophy" id="resultEmoji">🏆</span>
+      <h2 id="resultTitle">¡Quiz completado!</h2>
+      <div class="score-label" id="resultName"></div>
+      <div class="score-display" id="resultScore">0/15</div>
+      <div class="results-bar">
+        <div class="results-fill" id="resultsFill" style="width: 0%"></div>
+      </div>
+      <div class="message" id="resultMessage"></div>
+      <button class="retry-btn" onclick="retryQuiz()">🔄 Repetir Quiz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "¿Qué es la identidad digital?",
+    opts: [
+      "El DNI electrónico que usamos para trámites online",
+      "El conjunto de información sobre una persona expuesta en Internet que la caracteriza y diferencia de los demás",
+      "El perfil que creamos en una sola red social",
+      "La contraseña que usamos para entrar en nuestras cuentas"
+    ],
+    correct: 1,
+    explain: "Tu identidad digital es TODO lo que Internet sabe de ti: publicaciones, fotos, comentarios, gustos..."
+  },
+  {
+    q: "¿Cuál de estos elementos NO forma parte de lo que dejamos en la red?",
+    opts: [
+      "Lo que pensamos, decimos y publicamos",
+      "Nuestras aficiones, gustos e intereses",
+      "Nuestro grupo sanguíneo del historial médico del hospital",
+      "Las fotos y vídeos que subimos"
+    ],
+    correct: 2,
+    explain: "Los datos médicos almacenados en el hospital no forman parte de tu huella digital habitual en Internet."
+  },
+  {
+    q: "En 2016, ¿cuántas fotos se compartían cada minuto en Facebook?",
+    opts: [
+      "21.630",
+      "216.300",
+      "2.163.000",
+      "2.400.000"
+    ],
+    correct: 1,
+    explain: "Se compartían 216.300 fotos por minuto. ¡Imaginad la cantidad de datos personales que eso supone!"
+  },
+  {
+    q: "¿Por qué tenemos diferentes identidades digitales parciales?",
+    opts: [
+      "Porque en cada red social mentimos sobre algo diferente",
+      "Porque cada plataforma nos obliga a inventar datos distintos",
+      "Porque mostramos aspectos diferentes de nosotros según la actividad online",
+      "Porque los hackers crean perfiles falsos con nuestro nombre"
+    ],
+    correct: 2,
+    explain: "En cada plataforma mostramos una faceta distinta: en Instagram fotos, en Twitter opiniones, en LinkedIn lo profesional..."
+  },
+  {
+    q: "¿Quién puede influir en nuestra identidad digital además de nosotros mismos?",
+    opts: [
+      "Solo nosotros controlamos nuestra identidad digital al 100%",
+      "Otras personas, por lo que publican sobre nosotros",
+      "Solo las empresas de redes sociales",
+      "Nadie más, porque las cuentas son privadas"
+    ],
+    correct: 1,
+    explain: "Lo que otros publican sobre ti (fotos, comentarios, etiquetas) también forma parte de tu identidad digital."
+  },
+  {
+    q: "Según la presentación, ¿cuál es la definición de privacidad?",
+    opts: [
+      "No tener redes sociales ni presencia en Internet",
+      "Tener todas las cuentas con contraseña",
+      "El ámbito de la vida privada que se tiene derecho a proteger de cualquier intromisión",
+      "Usar siempre el modo incógnito del navegador"
+    ],
+    correct: 2,
+    explain: "La privacidad es un DERECHO: poder proteger tu vida privada de intromisiones no deseadas."
+  },
+  {
+    q: "¿Cuál de estos NO forma parte de nuestra privacidad según la presentación?",
+    opts: [
+      "Nuestras creencias",
+      "Nuestras fotos y vídeos",
+      "Nuestro email personal",
+      "El nombre de nuestra calle, que aparece en Google Maps"
+    ],
+    correct: 3,
+    explain: "Google Maps muestra calles públicas. Tu privacidad incluye gustos, creencias, fotos, vídeos, email..."
+  },
+  {
+    q: "¿Qué son los derechos ARCO?",
+    opts: [
+      "Un tipo de antivirus para proteger datos",
+      "Los derechos de Acceso, Rectificación, Cancelación y Oposición sobre nuestros datos personales",
+      "Las normas que regulan las redes sociales en Europa",
+      "Un protocolo de seguridad para páginas web"
+    ],
+    correct: 1,
+    explain: "ARCO = Acceso, Rectificación, Cancelación y Oposición. Son tus derechos si alguien hace mal uso de tus datos."
+  },
+  {
+    q: "¿Qué riesgos corremos si facilitamos demasiada información privada en Internet?",
+    opts: [
+      "Solo que nos llegue spam al correo",
+      "Robo de identidad, ciberacoso y vulneración de nuestra privacidad",
+      "Que nos bloqueen la cuenta de la red social",
+      "Que nos cobren más por las compras online"
+    ],
+    correct: 1,
+    explain: "Exponer demasiada info puede llevar a robo de identidad, ciberacoso o vulneración de tu intimidad. ¡Cuidado!"
+  },
+  {
+    q: "¿Es delito reenviar por WhatsApp una foto de un compañero sin su consentimiento?",
+    opts: [
+      "No, porque la foto ya era pública al estar en un grupo",
+      "No, porque tú no la hiciste, solo la reenviaste",
+      "Sí, puede ser un delito porque vulnera su privacidad",
+      "Solo es delito si la foto es de un adulto, no de un menor"
+    ],
+    correct: 2,
+    explain: "Reenviar fotos o vídeos de alguien sin su consentimiento puede ser delito. ¡Reenviar no te exime de responsabilidad!"
+  },
+  {
+    q: "¿Qué afirmación es cierta sobre la eliminación de archivos digitales?",
+    opts: [
+      "Si borras un archivo, desaparece completamente de Internet",
+      "No hay ningún sistema que garantice al 100% la eliminación de un archivo digital",
+      "Las redes sociales borran automáticamente todo después de 30 días",
+      "El modo incógnito garantiza que no quede rastro de nada"
+    ],
+    correct: 1,
+    explain: "Una vez que algo está en Internet, puede ser casi imposible eliminarlo completamente. ¡Piensa antes de publicar!"
+  },
+  {
+    q: "¿Qué es la reputación online?",
+    opts: [
+      "El número de seguidores que tienes en redes sociales",
+      "La impresión que causan sobre nosotros los datos y decisiones que reflejamos en Internet",
+      "La nota media que nos ponen otros usuarios en apps",
+      "Tener un perfil verificado con el tick azul"
+    ],
+    correct: 1,
+    explain: "Tu reputación online es la imagen que proyectas con todo lo que publicas. ¡Debe ser positiva!"
+  },
+  {
+    q: "¿Qué porcentaje de empresas de selección de personal busca información sobre candidatos en Internet?",
+    opts: [
+      "3 de cada 10",
+      "5 de cada 10",
+      "7 de cada 10",
+      "9 de cada 10"
+    ],
+    correct: 2,
+    explain: "7 de cada 10 empresas buscan info de los candidatos en Internet. Lo que publicas HOY puede afectar tu FUTURO."
+  },
+  {
+    q: "¿Cuál de estas es una recomendación de seguridad de la presentación?",
+    opts: [
+      "Compartir la contraseña solo con tu mejor amigo de confianza",
+      "Conectar el GPS siempre para que te localicen si te pierdes",
+      "Revisar los permisos que solicitan las apps que instalamos en nuestro smartphone",
+      "Publicar tu rutina diaria para que tus seguidores te conozcan mejor"
+    ],
+    correct: 2,
+    explain: "Muchas apps piden permisos innecesarios (cámara, micrófono, contactos). ¡Revísalos siempre antes de instalar!"
+  },
+  {
+    q: "¿Qué deberías hacer ANTES de crear un perfil en una red social?",
+    opts: [
+      "Subir una foto de perfil atractiva cuanto antes",
+      "Informarte sobre las condiciones y políticas de privacidad de esa red social",
+      "Conseguir al menos 50 contactos para que el perfil sea visible",
+      "Poner tu nombre real y dirección para que te encuentren más fácil"
+    ],
+    correct: 1,
+    explain: "Siempre hay que leer las políticas de privacidad ANTES de crear una cuenta. Así sabes qué harán con tus datos."
+  }
+];
+
+let currentQ = 0;
+let score = 0;
+let answered = false;
+let studentName = '';
+
+function startQuiz() {
+  studentName = document.getElementById('studentName').value.trim();
+  if (!studentName) {
+    document.getElementById('studentName').style.borderColor = 'var(--wrong)';
+    document.getElementById('studentName').setAttribute('placeholder', '⚠️ Escribe tu nombre para continuar');
+    return;
+  }
+  document.getElementById('intro').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+  document.getElementById('qNumber').textContent = `PREGUNTA ${currentQ + 1}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('progressText').textContent = `${currentQ + 1} / ${questions.length}`;
+  document.getElementById('scoreText').textContent = `Aciertos: ${score}`;
+  document.getElementById('progressFill').style.width = `${((currentQ) / questions.length) * 100}%`;
+
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+
+  q.opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<div class="letter"><span>${letters[i]}</span></div><div class="option-text">${opt}</div>`;
+    div.onclick = () => selectAnswer(i);
+    container.appendChild(div);
+  });
+
+  document.getElementById('feedback').classList.add('hidden');
+  document.getElementById('nextBtn').classList.add('hidden');
+
+  // Re-trigger animation
+  const card = document.getElementById('questionCard');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = '';
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[currentQ];
+  const options = document.querySelectorAll('.option');
+  const isCorrect = idx === q.correct;
+
+  if (isCorrect) score++;
+
+  options.forEach((opt, i) => {
+    opt.classList.add('disabled');
+    if (i === q.correct) {
+      opt.classList.add('correct');
+    } else if (i === idx && !isCorrect) {
+      opt.classList.add('wrong');
+    } else {
+      opt.classList.add('dimmed');
+    }
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.classList.remove('hidden', 'correct-fb', 'wrong-fb');
+
+  if (isCorrect) {
+    fb.classList.add('correct-fb');
+    fb.innerHTML = `<strong>✅ ¡Correcto!</strong> ${q.explain}`;
+  } else {
+    fb.classList.add('wrong-fb');
+    fb.innerHTML = `<strong>❌ Incorrecto.</strong> ${q.explain}`;
+  }
+
+  document.getElementById('scoreText').textContent = `Aciertos: ${score}`;
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.classList.remove('hidden');
+  nextBtn.textContent = currentQ === questions.length - 1 ? 'Ver resultados 🏆' : 'Siguiente pregunta →';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length) {
+    showResults();
+  } else {
+    showQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+
+  const pct = Math.round((score / questions.length) * 100);
+  document.getElementById('resultName').textContent = studentName;
+  document.getElementById('resultScore').textContent = `${score} / ${questions.length}`;
+
+  let emoji, title, msg, color;
+  if (pct >= 90) {
+    emoji = '🏆'; title = '¡Eres un CiberExperto!';
+    msg = '¡Increíble! Dominas la ciberseguridad como un profesional. Tus datos están a salvo contigo.';
+    color = 'var(--correct)';
+  } else if (pct >= 70) {
+    emoji = '🛡️'; title = '¡Gran CiberDefensor!';
+    msg = '¡Muy bien! Sabes bastante sobre ciberseguridad. Repasa los fallos y serás imparable.';
+    color = 'var(--accent)';
+  } else if (pct >= 50) {
+    emoji = '🔑'; title = 'Vas por buen camino';
+    msg = 'Tienes una base, pero necesitas reforzar algunos conceptos importantes. ¡Revisa la presentación!';
+    color = '#ffab40';
+  } else {
+    emoji = '📚'; title = 'Necesitas estudiar más';
+    msg = 'La ciberseguridad es fundamental hoy en día. Repasa la presentación y vuelve a intentarlo.';
+    color = 'var(--wrong)';
+  }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMessage').textContent = msg;
+
+  const fill = document.getElementById('resultsFill');
+  fill.style.background = color;
+  setTimeout(() => { fill.style.width = `${pct}%`; }, 100);
+}
+
+function retryQuiz() {
+  currentQ = 0;
+  score = 0;
+  answered = false;
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  showQuestion();
+}
+</script>
+
+</body>
+</html>
