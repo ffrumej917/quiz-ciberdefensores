@@ -506,7 +506,7 @@
 <script>
 const questions = [
 
-const QUIZ_ID = new URLSearchParams(window.location.search).get('id') || 'quiz-ciberdefensores';
+const QUIZ_ID = new URLSearchParams(window.location.search.toLowerCase()).get('id') || 'quiz-ciberdefensores';
 const FIREBASE_DB_URL = 'https://quizzes-cyr-default-rtdb.europe-west1.firebasedatabase.app';
 firebase.initializeApp({ databaseURL: FIREBASE_DB_URL });
 const db = firebase.database();
