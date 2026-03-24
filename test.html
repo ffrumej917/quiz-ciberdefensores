@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Test Firebase</title></head>
+<body style="background:#111;color:#0f0;font-family:monospace;padding:40px">
+<h2>Test Firebase Connection</h2>
+<pre id="log">Iniciando test...</pre>
+<script>
+const log = document.getElementById('log');
+function addLog(msg) { log.textContent += '\n' + msg; }
+
+const QUIZ_ID = new URLSearchParams(window.location.search.toLowerCase()).get('id') || 'cib2';
+addLog('QUIZ_ID: ' + QUIZ_ID);
+
+const url = 'https://quizzes-cyr-default-rtdb.europe-west1.firebasedatabase.app/quizzes/' + QUIZ_ID + '.json';
+addLog('URL: ' + url);
+addLog('Fetching...');
+
+fetch(url)
+  .then(r => {
+    addLog('Status: ' + r.status);
+    return r.text();
+  })
+  .then(text => {
+    addLog('Response: ' + text);
+  })
+  .catch(err => {
+    addLog('ERROR: ' + err.message);
+    addLog('Type: ' + err.name);
+  });
+</script>
+</body></html>
