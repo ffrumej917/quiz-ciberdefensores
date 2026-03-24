@@ -420,7 +420,25 @@
     .question-text { font-size: 17px; }
     .results-card .score-display { font-size: 44px; }
   }
+
+  .code-section { text-align: center; margin-bottom: 24px; }
+  .code-section label { display: block; font-size: 14px; color: var(--text-dim); margin-bottom: 8px; }
+  .code-section input {
+    font-family: 'Space Mono', monospace; font-size: 22px; padding: 14px 18px;
+    width: 100%; max-width: 280px; background: var(--option-bg);
+    border: 2px solid var(--border); border-radius: 10px; color: var(--accent);
+    outline: none; transition: border-color 0.2s; text-align: center;
+    letter-spacing: 6px; text-transform: uppercase;
+  }
+  .code-section input:focus { border-color: var(--accent); }
+  .code-section input::placeholder { letter-spacing: 2px; font-size: 14px; }
+  .code-error { color: var(--wrong); font-size: 13px; margin-top: 8px; display: none; }
+  .code-error.show { display: block; }
+  .code-ok { color: var(--correct); font-size: 14px; margin-top: 8px; display: none; }
+  .code-ok.show { display: block; animation: fadeUp 0.3s ease-out; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -432,7 +450,15 @@
       <h1>Quiz CiberDefensores</h1>
       <p>Privacidad, Identidad Digital y Reputación Online<br>15 preguntas · ¿Cuánto sabes sobre ciberseguridad?</p>
     </div>
-    <div class="student-name-section">
+    <div id="codeSection" class="code-section">
+      <label for="accessCode">Introduce el codigo de acceso del profesor</label>
+      <input type="text" id="accessCode" placeholder="CODIGO" autocomplete="off" maxlength="12">
+      <div id="codeError" class="code-error">Codigo incorrecto</div>
+      <div id="codeOk" class="code-ok">Codigo correcto</div>
+      <br>
+      <button class="start-btn" onclick="validateCode()">Validar codigo</button>
+    </div>
+    <div class="student-name-section hidden" id="nameSection">
       <label for="studentName">Escribe tu nombre para empezar</label>
       <input type="text" id="studentName" placeholder="Tu nombre y apellidos" autocomplete="off">
       <br>
@@ -479,183 +505,44 @@
 
 <script>
 const questions = [
-  {
-    q: "¿Qué es la identidad digital?",
-    opts: [
-      "El DNI electrónico que usamos para trámites online",
-      "El conjunto de información sobre una persona expuesta en Internet que la caracteriza y diferencia de los demás",
-      "El perfil que creamos en una sola red social",
-      "La contraseña que usamos para entrar en nuestras cuentas"
-    ],
-    correct: 1,
-    explain: "Tu identidad digital es TODO lo que Internet sabe de ti: publicaciones, fotos, comentarios, gustos..."
-  },
-  {
-    q: "¿Cuál de estos elementos NO forma parte de lo que dejamos en la red?",
-    opts: [
-      "Lo que pensamos, decimos y publicamos",
-      "Nuestras aficiones, gustos e intereses",
-      "Nuestro grupo sanguíneo del historial médico del hospital",
-      "Las fotos y vídeos que subimos"
-    ],
-    correct: 2,
-    explain: "Los datos médicos almacenados en el hospital no forman parte de tu huella digital habitual en Internet."
-  },
-  {
-    q: "En 2016, ¿cuántas fotos se compartían cada minuto en Facebook?",
-    opts: [
-      "21.630",
-      "216.300",
-      "2.163.000",
-      "2.400.000"
-    ],
-    correct: 1,
-    explain: "Se compartían 216.300 fotos por minuto. ¡Imaginad la cantidad de datos personales que eso supone!"
-  },
-  {
-    q: "¿Por qué tenemos diferentes identidades digitales parciales?",
-    opts: [
-      "Porque en cada red social mentimos sobre algo diferente",
-      "Porque cada plataforma nos obliga a inventar datos distintos",
-      "Porque mostramos aspectos diferentes de nosotros según la actividad online",
-      "Porque los hackers crean perfiles falsos con nuestro nombre"
-    ],
-    correct: 2,
-    explain: "En cada plataforma mostramos una faceta distinta: en Instagram fotos, en Twitter opiniones, en LinkedIn lo profesional..."
-  },
-  {
-    q: "¿Quién puede influir en nuestra identidad digital además de nosotros mismos?",
-    opts: [
-      "Solo nosotros controlamos nuestra identidad digital al 100%",
-      "Otras personas, por lo que publican sobre nosotros",
-      "Solo las empresas de redes sociales",
-      "Nadie más, porque las cuentas son privadas"
-    ],
-    correct: 1,
-    explain: "Lo que otros publican sobre ti (fotos, comentarios, etiquetas) también forma parte de tu identidad digital."
-  },
-  {
-    q: "Según la presentación, ¿cuál es la definición de privacidad?",
-    opts: [
-      "No tener redes sociales ni presencia en Internet",
-      "Tener todas las cuentas con contraseña",
-      "El ámbito de la vida privada que se tiene derecho a proteger de cualquier intromisión",
-      "Usar siempre el modo incógnito del navegador"
-    ],
-    correct: 2,
-    explain: "La privacidad es un DERECHO: poder proteger tu vida privada de intromisiones no deseadas."
-  },
-  {
-    q: "¿Cuál de estos NO forma parte de nuestra privacidad según la presentación?",
-    opts: [
-      "Nuestras creencias",
-      "Nuestras fotos y vídeos",
-      "Nuestro email personal",
-      "El nombre de nuestra calle, que aparece en Google Maps"
-    ],
-    correct: 3,
-    explain: "Google Maps muestra calles públicas. Tu privacidad incluye gustos, creencias, fotos, vídeos, email..."
-  },
-  {
-    q: "¿Qué son los derechos ARCO?",
-    opts: [
-      "Un tipo de antivirus para proteger datos",
-      "Los derechos de Acceso, Rectificación, Cancelación y Oposición sobre nuestros datos personales",
-      "Las normas que regulan las redes sociales en Europa",
-      "Un protocolo de seguridad para páginas web"
-    ],
-    correct: 1,
-    explain: "ARCO = Acceso, Rectificación, Cancelación y Oposición. Son tus derechos si alguien hace mal uso de tus datos."
-  },
-  {
-    q: "¿Qué riesgos corremos si facilitamos demasiada información privada en Internet?",
-    opts: [
-      "Solo que nos llegue spam al correo",
-      "Robo de identidad, ciberacoso y vulneración de nuestra privacidad",
-      "Que nos bloqueen la cuenta de la red social",
-      "Que nos cobren más por las compras online"
-    ],
-    correct: 1,
-    explain: "Exponer demasiada info puede llevar a robo de identidad, ciberacoso o vulneración de tu intimidad. ¡Cuidado!"
-  },
-  {
-    q: "¿Es delito reenviar por WhatsApp una foto de un compañero sin su consentimiento?",
-    opts: [
-      "No, porque la foto ya era pública al estar en un grupo",
-      "No, porque tú no la hiciste, solo la reenviaste",
-      "Sí, puede ser un delito porque vulnera su privacidad",
-      "Solo es delito si la foto es de un adulto, no de un menor"
-    ],
-    correct: 2,
-    explain: "Reenviar fotos o vídeos de alguien sin su consentimiento puede ser delito. ¡Reenviar no te exime de responsabilidad!"
-  },
-  {
-    q: "¿Qué afirmación es cierta sobre la eliminación de archivos digitales?",
-    opts: [
-      "Si borras un archivo, desaparece completamente de Internet",
-      "No hay ningún sistema que garantice al 100% la eliminación de un archivo digital",
-      "Las redes sociales borran automáticamente todo después de 30 días",
-      "El modo incógnito garantiza que no quede rastro de nada"
-    ],
-    correct: 1,
-    explain: "Una vez que algo está en Internet, puede ser casi imposible eliminarlo completamente. ¡Piensa antes de publicar!"
-  },
-  {
-    q: "¿Qué es la reputación online?",
-    opts: [
-      "El número de seguidores que tienes en redes sociales",
-      "La impresión que causan sobre nosotros los datos y decisiones que reflejamos en Internet",
-      "La nota media que nos ponen otros usuarios en apps",
-      "Tener un perfil verificado con el tick azul"
-    ],
-    correct: 1,
-    explain: "Tu reputación online es la imagen que proyectas con todo lo que publicas. ¡Debe ser positiva!"
-  },
-  {
-    q: "¿Qué porcentaje de empresas de selección de personal busca información sobre candidatos en Internet?",
-    opts: [
-      "3 de cada 10",
-      "5 de cada 10",
-      "7 de cada 10",
-      "9 de cada 10"
-    ],
-    correct: 2,
-    explain: "7 de cada 10 empresas buscan info de los candidatos en Internet. Lo que publicas HOY puede afectar tu FUTURO."
-  },
-  {
-    q: "¿Cuál de estas es una recomendación de seguridad de la presentación?",
-    opts: [
-      "Compartir la contraseña solo con tu mejor amigo de confianza",
-      "Conectar el GPS siempre para que te localicen si te pierdes",
-      "Revisar los permisos que solicitan las apps que instalamos en nuestro smartphone",
-      "Publicar tu rutina diaria para que tus seguidores te conozcan mejor"
-    ],
-    correct: 2,
-    explain: "Muchas apps piden permisos innecesarios (cámara, micrófono, contactos). ¡Revísalos siempre antes de instalar!"
-  },
-  {
-    q: "¿Qué deberías hacer ANTES de crear un perfil en una red social?",
-    opts: [
-      "Subir una foto de perfil atractiva cuanto antes",
-      "Informarte sobre las condiciones y políticas de privacidad de esa red social",
-      "Conseguir al menos 50 contactos para que el perfil sea visible",
-      "Poner tu nombre real y dirección para que te encuentren más fácil"
-    ],
-    correct: 1,
-    explain: "Siempre hay que leer las políticas de privacidad ANTES de crear una cuenta. Así sabes qué harán con tus datos."
-  }
-];
 
-let currentQ = 0;
-let score = 0;
-let answered = false;
-let studentName = '';
+const QUIZ_ID = 'quiz-ciberdefensores';
+const FIREBASE_DB_URL = 'https://quizzes-cyr-default-rtdb.europe-west1.firebasedatabase.app';
+firebase.initializeApp({ databaseURL: FIREBASE_DB_URL });
+const db = firebase.database();
+let currentQ = 0, score = 0, answered = false, studentName = '', codeValidated = false;
+
+function validateCode() {
+  const code = document.getElementById('accessCode').value.trim().toUpperCase();
+  if (!code) { document.getElementById('accessCode').style.borderColor = 'var(--wrong)'; return; }
+  db.ref('quizzes/' + QUIZ_ID).once('value').then(snap => {
+    const data = snap.val();
+    if (!data) { showCodeErr('Quiz no configurado. Contacta al profesor.'); return; }
+    if (data.active === false) { showCodeErr('Este quiz esta cerrado por el profesor.'); return; }
+    if (data.code && data.code.toUpperCase() === code) {
+      document.getElementById('codeError').classList.remove('show');
+      document.getElementById('codeOk').classList.add('show');
+      codeValidated = true;
+      setTimeout(() => {
+        document.getElementById('codeSection').classList.add('hidden');
+        document.getElementById('nameSection').classList.remove('hidden');
+      }, 600);
+    } else { showCodeErr('Codigo incorrecto. Pregunta a tu profesor.'); }
+  }).catch(() => showCodeErr('Error de conexion. Intenta de nuevo.'));
+}
+function showCodeErr(msg) {
+  document.getElementById('codeError').textContent = msg;
+  document.getElementById('codeError').classList.add('show');
+  document.getElementById('codeOk').classList.remove('show');
+  document.getElementById('accessCode').style.borderColor = 'var(--wrong)';
+}
 
 function startQuiz() {
+  if (!codeValidated) return;
   studentName = document.getElementById('studentName').value.trim();
   if (!studentName) {
     document.getElementById('studentName').style.borderColor = 'var(--wrong)';
-    document.getElementById('studentName').setAttribute('placeholder', '⚠️ Escribe tu nombre para continuar');
+    document.getElementById('studentName').setAttribute('placeholder', 'Escribe tu nombre');
     return;
   }
   document.getElementById('intro').classList.add('hidden');
@@ -666,126 +553,83 @@ function startQuiz() {
 function showQuestion() {
   answered = false;
   const q = questions[currentQ];
-  document.getElementById('qNumber').textContent = `PREGUNTA ${currentQ + 1}`;
+  document.getElementById('qNumber').textContent = 'PREGUNTA ' + (currentQ + 1);
   document.getElementById('qText').textContent = q.q;
-  document.getElementById('progressText').textContent = `${currentQ + 1} / ${questions.length}`;
-  document.getElementById('scoreText').textContent = `Aciertos: ${score}`;
-  document.getElementById('progressFill').style.width = `${((currentQ) / questions.length) * 100}%`;
-
+  document.getElementById('progressText').textContent = (currentQ + 1) + ' / ' + questions.length;
+  document.getElementById('scoreText').textContent = 'Aciertos: ' + score;
+  document.getElementById('progressFill').style.width = ((currentQ / questions.length) * 100) + '%';
   const container = document.getElementById('optionsContainer');
   container.innerHTML = '';
-  const letters = ['A', 'B', 'C', 'D'];
-
+  const letters = ['A','B','C','D'];
   q.opts.forEach((opt, i) => {
     const div = document.createElement('div');
     div.className = 'option';
-    div.innerHTML = `<div class="letter"><span>${letters[i]}</span></div><div class="option-text">${opt}</div>`;
+    div.innerHTML = '<div class="letter"><span>'+letters[i]+'</span></div><div class="option-text">'+opt+'</div>';
     div.onclick = () => selectAnswer(i);
     container.appendChild(div);
   });
-
   document.getElementById('feedback').classList.add('hidden');
   document.getElementById('nextBtn').classList.add('hidden');
-
-  // Re-trigger animation
   const card = document.getElementById('questionCard');
-  card.style.animation = 'none';
-  card.offsetHeight;
-  card.style.animation = '';
+  card.style.animation = 'none'; card.offsetHeight; card.style.animation = '';
 }
 
 function selectAnswer(idx) {
   if (answered) return;
   answered = true;
-
-  const q = questions[currentQ];
-  const options = document.querySelectorAll('.option');
-  const isCorrect = idx === q.correct;
-
+  const q = questions[currentQ], isCorrect = idx === q.correct;
   if (isCorrect) score++;
-
-  options.forEach((opt, i) => {
+  document.querySelectorAll('.option').forEach((opt, i) => {
     opt.classList.add('disabled');
-    if (i === q.correct) {
-      opt.classList.add('correct');
-    } else if (i === idx && !isCorrect) {
-      opt.classList.add('wrong');
-    } else {
-      opt.classList.add('dimmed');
-    }
+    if (i === q.correct) opt.classList.add('correct');
+    else if (i === idx && !isCorrect) opt.classList.add('wrong');
+    else opt.classList.add('dimmed');
   });
-
   const fb = document.getElementById('feedback');
-  fb.classList.remove('hidden', 'correct-fb', 'wrong-fb');
-
-  if (isCorrect) {
-    fb.classList.add('correct-fb');
-    fb.innerHTML = `<strong>✅ ¡Correcto!</strong> ${q.explain}`;
-  } else {
-    fb.classList.add('wrong-fb');
-    fb.innerHTML = `<strong>❌ Incorrecto.</strong> ${q.explain}`;
-  }
-
-  document.getElementById('scoreText').textContent = `Aciertos: ${score}`;
-
+  fb.classList.remove('hidden','correct-fb','wrong-fb');
+  if (isCorrect) { fb.classList.add('correct-fb'); fb.innerHTML = '<strong>\u2705 \u00a1Correcto!</strong> '+q.explain; }
+  else { fb.classList.add('wrong-fb'); fb.innerHTML = '<strong>\u274c Incorrecto.</strong> '+q.explain; }
+  document.getElementById('scoreText').textContent = 'Aciertos: ' + score;
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.classList.remove('hidden');
-  nextBtn.textContent = currentQ === questions.length - 1 ? 'Ver resultados 🏆' : 'Siguiente pregunta →';
+  nextBtn.textContent = currentQ === questions.length - 1 ? 'Ver resultados \ud83c\udfc6' : 'Siguiente pregunta \u2192';
 }
 
 function nextQuestion() {
   currentQ++;
-  if (currentQ >= questions.length) {
-    showResults();
-  } else {
-    showQuestion();
-  }
+  if (currentQ >= questions.length) showResults();
+  else showQuestion();
 }
 
 function showResults() {
   document.getElementById('quiz').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
-
   const pct = Math.round((score / questions.length) * 100);
   document.getElementById('resultName').textContent = studentName;
-  document.getElementById('resultScore').textContent = `${score} / ${questions.length}`;
-
+  document.getElementById('resultScore').textContent = score + ' / ' + questions.length;
   let emoji, title, msg, color;
-  if (pct >= 90) {
-    emoji = '🏆'; title = '¡Eres un CiberExperto!';
-    msg = '¡Increíble! Dominas la ciberseguridad como un profesional. Tus datos están a salvo contigo.';
-    color = 'var(--correct)';
-  } else if (pct >= 70) {
-    emoji = '🛡️'; title = '¡Gran CiberDefensor!';
-    msg = '¡Muy bien! Sabes bastante sobre ciberseguridad. Repasa los fallos y serás imparable.';
-    color = 'var(--accent)';
-  } else if (pct >= 50) {
-    emoji = '🔑'; title = 'Vas por buen camino';
-    msg = 'Tienes una base, pero necesitas reforzar algunos conceptos importantes. ¡Revisa la presentación!';
-    color = '#ffab40';
-  } else {
-    emoji = '📚'; title = 'Necesitas estudiar más';
-    msg = 'La ciberseguridad es fundamental hoy en día. Repasa la presentación y vuelve a intentarlo.';
-    color = 'var(--wrong)';
-  }
-
+  if (pct >= 90) { emoji='\ud83c\udfc6'; title='\u00a1Experto!'; msg='\u00a1Incre\u00edble! Dominas el tema como un profesional.'; color='var(--correct)'; }
+  else if (pct >= 70) { emoji='\ud83d\udee1\ufe0f'; title='\u00a1Muy bien!'; msg='Gran resultado. Repasa los fallos y ser\u00e1s imparable.'; color='var(--accent)'; }
+  else if (pct >= 50) { emoji='\ud83d\udd11'; title='Vas por buen camino'; msg='Tienes base pero necesitas repasar algunos conceptos.'; color='#ffab40'; }
+  else { emoji='\ud83d\udcda'; title='Necesitas repasar'; msg='Revisa el material y vuelve a intentarlo. \u00a1T\u00fa puedes!'; color='var(--wrong)'; }
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultTitle').textContent = title;
   document.getElementById('resultMessage').textContent = msg;
-
   const fill = document.getElementById('resultsFill');
   fill.style.background = color;
-  setTimeout(() => { fill.style.width = `${pct}%`; }, 100);
+  setTimeout(() => { fill.style.width = pct + '%'; }, 100);
+  db.ref('results/' + QUIZ_ID).push({
+    name: studentName, score: score, total: questions.length, pct: pct, timestamp: Date.now()
+  });
 }
 
 function retryQuiz() {
-  currentQ = 0;
-  score = 0;
-  answered = false;
+  currentQ = 0; score = 0; answered = false;
   document.getElementById('results').classList.add('hidden');
   document.getElementById('quiz').classList.remove('hidden');
   showQuestion();
 }
+document.getElementById('accessCode').addEventListener('keydown', function(e) { if (e.key === 'Enter') validateCode(); });
 </script>
 
 </body>
